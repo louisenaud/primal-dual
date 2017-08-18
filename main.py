@@ -157,18 +157,11 @@ if __name__ == '__main__':
     img_ref = np.array(face(True))
     img_obs = skimage.util.random_noise(img_ref, mode='gaussian')
 
-    # Two subplots, unpack the axes array immediately
-    f, (ax1, ax2) = plt.subplots(1, 2, sharey=True)
-    ax1.imshow(img_ref)
-    ax1.set_title('Sharing Y axis')
-    ax2.imshow(img_obs)
-    plt.show()
-
     g2 = forward_gradient(img_obs)
     i2 = backward_divergence(g2)
 
-    norm_l = 8.0
-    max_it = 500
+    norm_l = 2.5
+    max_it = 101
     theta = 1.0
     alpha = 0.1
     w_sig = 10.0
@@ -178,7 +171,7 @@ if __name__ == '__main__':
     lambda_TVL1 = 1.0
     lambda_rof = 1.5
 
-    x = -img_obs
+    x = img_obs
     x_tilde = x
     h, w = img_ref.shape
     y = np.zeros((h, w, 2))
@@ -200,10 +193,13 @@ if __name__ == '__main__':
     for it in range(max_it):
         # Dual update
         y = y + sigma * forward_gradient(x_tilde)
-        y = np.maximum(-wn, np.minimum(y, wp))
+        #y = np.maximum(-wn, np.minimum(y, wp))
+        y = proximal_linf_ball(y, 1.0)
         # Primal update
         x_old = x
         x = (x - tau * (img_obs - backward_divergence(y))) / (1.0 + tau)
+        #lt = lambda_rof * tau
+        #x = (x - tau * backward_divergence(y) + lt * img_obs) / (1.0 + lt)
         # Smoothing
         x_tilde = x + theta * (x - x_old)
 
