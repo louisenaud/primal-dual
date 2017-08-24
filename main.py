@@ -19,7 +19,7 @@ from proximal_operators import proximal_linf_ball
 def dual_energy_tvl1(y, im_obs):
     """
     Compute the dual energy of TV-L1 problem.
-    :param y: 
+    :param y: numpy array, [MxNx2]
     :param im_obs: numpy array, observed image
     :return: float, dual energy
     """
@@ -31,8 +31,8 @@ def dual_energy_tvl1(y, im_obs):
 def dual_energy_rof(y, im_obs):
     """
     Compute the dual energy of ROF problem.
-    :param y: 
-    :param im_obs: numpy array, observed image
+    :param y: numpy array, [MxNx2]
+    :param im_obs: numpy array [MxN], observed image
     :return: float, dual energy
     """
     nrg = -0.5 * (im_obs - backward_divergence(y))**2
@@ -43,57 +43,48 @@ def dual_energy_rof(y, im_obs):
 def primal_energy_rof(x, img_obs, clambda):
     """
 
-    :param x: 
-    :param img_obs: 
-    :param clambda: 
-    :return: 
+    :param x: numpy array, [MxN]
+    :param img_obs: numpy array [MxN], observed image
+    :param clambda: float, lambda parameter
+    :return: float, primal ROF energy
     """
     energy_reg = norm1(forward_gradient(x)).sum()
     energy_data_term = 0.5*clambda * norm2(x - img_obs).sum()
     return energy_reg + energy_data_term
 
 
-def primal_energy_tvl1(x, observation, clambda):
+def primal_energy_tvl1(x, img_obs, clambda):
     """
 
-    :param X: 
-    :param observation: 
-    :param clambda: 
-    :return: 
+    :param x: numpy array, [MxN]
+    :param img_obs: numpy array [MxN], observed image
+    :param clambda: float, lambda parameter
+    :return: float, primal ROF energy
     """
     energy_reg = norm1(forward_gradient(x)).sum()
     energy_data_term = clambda * np.abs(x - observation).sum()
     return energy_reg + energy_data_term
 
 
-
-
 if __name__ == '__main__':
     # Create image to noise and denoise
     img_ref = np.array(face(True))
     img_obs = skimage.util.random_noise(img_ref, mode='gaussian')
-    g2 = forward_gradient(img_obs)
-    i2 = backward_divergence(g2)
-
+    # Parameters
     norm_l = 7.0
     max_it = 3000
     theta = 1.0
-    alpha = 0.1
-    w_sig = 10.0
-    L2 = 8.0
     tau = 0.01
     sigma = 1.0 / (norm_l * tau)
-    lambda_TVL1 = 1.0
+    #lambda_TVL1 = 1.0
     lambda_rof = 7.0
 
     x = img_obs
     x_tilde = x
     h, w = img_ref.shape
     y = np.zeros((h, w, 2))
-    wn = w_sig * np.random.random((h, w, 2))
-    wp = wn
 
-    p_nrg = primal_energy_rof(x, img_obs, lambda_TVL1)
+    p_nrg = primal_energy_rof(x, img_obs, lambda_rof)
     print "Primal Energy = ", p_nrg
     d_nrg = dual_energy_rof(y, img_obs)
     print "Dual Energy = ", d_nrg
@@ -132,7 +123,7 @@ if __name__ == '__main__':
     plt.plot(np.asarray(range(max_it)), gap, label="Gap")
     plt.legend()
 
-    # row and column sharing
+    # Plot reference, observed and denoised image
     f, ((ax1, ax2), (ax3, ax4)) = plt.subplots(2, 2, sharex='col', sharey='row')
     ax1.imshow(img_ref)
     ax1.set_title("Reference image")
